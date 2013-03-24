@@ -58,6 +58,8 @@ class RemoveScheduler(threading.Thread):
         while not self._end.is_set():
             self._sched.run()
             with self._lock:
+                if self._end.is_set():
+                    break
                 self._wakeup.wait()
 
     def stop(self):
