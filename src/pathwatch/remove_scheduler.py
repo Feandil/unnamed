@@ -11,8 +11,7 @@ class RemoveScheduler(threading.Thread):
         Warning: no concurrency protection between last event and add !
     """
 
-    def __init__(self, parent, timefunc=time.time, delayfunc=time.sleep):
-        self._parent = parent
+    def __init__(self, timefunc=time.time, delayfunc=time.sleep):
         self._elements = {}
         self._sched = sched.scheduler(timefunc, delayfunc)
         self._lock = threading.RLock()
@@ -23,13 +22,14 @@ class RemoveScheduler(threading.Thread):
     def _callback(self, item):
         """Callback for the scheduler"""
         try:
+            (_, handler) = self._elements[item]
             del self._elements[item]
-            self._parent.delete(item)
+            handler.delete(item)
         except KeyError:
             # Already removed
             pass
 
-    def add(self, delay, item, priority=1):
+    def add(self, delay, item, handler, priority=1):
         """Remove the given item in delay"""
         with self._lock:
             if item in self._elements:
@@ -37,14 +37,14 @@ class RemoveScheduler(threading.Thread):
             event = self._sched.enter(delay, priority,
                                       self._callback,
                                       (item,))
-            self._elements[item] = event
+            self._elements[item] = (event, handler)
             self._wakeup.notify_all()
 
     def cancel(self, item):
         """Cancel the removal of the given item"""
         with self._lock:
             try:
-                event = self._elements[item]
+                (event, _) = self._elements[item]
                 del self._elements[item]
                 self._sched.cancel(event)
             except KeyError:
