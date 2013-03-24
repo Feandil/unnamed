@@ -61,7 +61,8 @@ class RemoveScheduler(threading.Thread):
                 self._wakeup.wait()
 
     def stop(self):
-        """Notify the underlying thread to stop"""
+        """Notify the underlying thread to stop, join it"""
         self._end.set()
         with self._lock:
             self._wakeup.notify_all()
+        self.join()
