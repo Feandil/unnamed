@@ -6,16 +6,16 @@ import time
 from pathwatch import RemoveScheduler
 
 
-class TestRemoveScheduler(unittest.TestCase):
+class TestRemoveScheduler(unittest.TestCase):  # IGNORE:R0904
     """Test if the RemoveScheduler is working as predicted or not"""
 
-    def setUp(self):
+    def setUp(self):  # IGNORE:C0103
         """Create a RemoveScheduler"""
         self.dict = {'flag':'Not Empty'}
         self.scheduler = RemoveScheduler(self.dict)
         self.scheduler.start()
 
-    def tearDown(self):
+    def tearDown(self):  # IGNORE:C0103
         """Delete the internal scheduler"""
         self.scheduler.stop()
         self.assertTrue('flag' in self.dict)
