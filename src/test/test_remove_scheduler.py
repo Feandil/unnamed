@@ -6,18 +6,39 @@ import time
 from pathwatch import RemoveScheduler
 
 
+class DictRemove(object):
+    """Helper for TestRemoveScheduler that only remove a key from a dict"""
+
+    def __init__(self, target):
+        self._target = target
+        self._err = False
+
+    def delete(self, item):
+        """"Just remove the value"""
+        try:
+            del self._target[item]
+        except KeyError:
+            self._err = True
+
+    def good(self):
+        """Check if an unexistant entry was deleted"""
+        return not self._err
+
+
 class TestRemoveScheduler(unittest.TestCase):  # IGNORE:R0904
     """Test if the RemoveScheduler is working as predicted or not"""
 
     def setUp(self):  # IGNORE:C0103
         """Create a RemoveScheduler"""
         self.dict = {'flag':'Not Empty'}
-        self.scheduler = RemoveScheduler(self.dict)
+        self.remover = DictRemove(self.dict)
+        self.scheduler = RemoveScheduler(self.remover)
         self.scheduler.start()
 
     def tearDown(self):  # IGNORE:C0103
         """Delete the internal scheduler"""
         self.scheduler.stop()
+        self.assertTrue(self.remover.good())
         self.assertTrue('flag' in self.dict)
         self.assertFalse('noflag' in self.dict)
 

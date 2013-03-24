@@ -9,12 +9,10 @@ import threading
 class RemoveScheduler(threading.Thread):
     """Run a scheduler in a dedicated thread. Wait on an 'add' if schedule empty
         Warning: no concurrency protection between last event and add !
-        
-        This scheduler is specialized into removing entries from a dictionary.
     """
 
-    def __init__(self, target, timefunc=time.time, delayfunc=time.sleep):
-        self._target = target
+    def __init__(self, parent, timefunc=time.time, delayfunc=time.sleep):
+        self._parent = parent
         self._elements = {}
         self._sched = sched.scheduler(timefunc, delayfunc)
         self._lock = threading.RLock()
@@ -22,11 +20,11 @@ class RemoveScheduler(threading.Thread):
         self._end = threading.Event()
         super(RemoveScheduler, self).__init__()
 
-    def _remove_element(self, item):
+    def _callback(self, item):
         """Callback for the scheduler"""
         try:
             del self._elements[item]
-            del self._target[item]
+            self._parent.delete(item)
         except KeyError:
             # Already removed
             pass
@@ -37,7 +35,7 @@ class RemoveScheduler(threading.Thread):
             if item in self._elements:
                 raise KeyError("Key already present")
             event = self._sched.enter(delay, priority,
-                                      self._remove_element,
+                                      self._callback,
                                       (item,))
             self._elements[item] = event
             self._wakeup.notify_all()
