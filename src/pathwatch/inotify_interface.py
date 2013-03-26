@@ -92,7 +92,13 @@ class _EventProcessing(_DefaultEventProcessing):
                 # moved from watched place
                 assert(self._moving[event.cookie] == event.src_pathname)
                 del self._moving[event.cookie]
-                self._queue.put(('moved', event.src_pathname, event.pathname))
+                if event.dir:
+                    self._queue.put(('move_dir', event.src_pathname,
+                                     event.pathname))
+                else:
+                    self._queue.put(('move_file', event.src_pathname,
+                                     event.pathname))
+
             else:
                 # Moved from an external place: new :)
                 assert(not hasattr(event, 'src_pathname'))

@@ -116,7 +116,7 @@ class TestInotifyWatch(unittest.TestCase):  # IGNORE:R0904
         shutil.move(pos_1, pos_2)
         time.sleep(1)
         self.assertFalse(self.queue.empty())
-        self.assertEqual(('moved', pos_1, pos_2), self.queue.get())
+        self.assertEqual(('move_file', pos_1, pos_2), self.queue.get())
 
     def test_movedir_between_roots(self):
         """Try to move a dir between two watched areas"""
@@ -135,7 +135,7 @@ class TestInotifyWatch(unittest.TestCase):  # IGNORE:R0904
         shutil.move(pos_1, pos_2)
         time.sleep(1)
         self.assertFalse(self.queue.empty())
-        self.assertEqual(('moved', pos_1, pos_2), self.queue.get())
+        self.assertEqual(('move_dir', pos_1, pos_2), self.queue.get())
 
     def test_movedir_to_root(self):
         """Try to move a dir containing a file into a watched area"""
