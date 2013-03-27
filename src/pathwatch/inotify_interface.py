@@ -122,6 +122,7 @@ class _EventProcessing(_DefaultEventProcessing):
             self._queue.put(('remove_file', event.pathname))
 
     def _add_rec(self, event, add_files):
+        """Recursiverly add a folder to the watched ones"""
         try:
             with self._wd_lock:
                 self._wd.update(self._wm.add_watch(event.pathname,
