@@ -58,7 +58,7 @@ class TestRemoveScheduler(unittest.TestCase):  # IGNORE:R0904
         self.scheduler.add(5, 'test_doubleadd_2', self.remover)
         self.assertTrue('test_doubleadd_1' in self.dict)
         self.assertTrue('test_doubleadd_2' in self.dict)
-        time.sleep(6)
+        time.sleep(7)
         self.assertFalse('test_doubleadd_1' in self.dict)
         self.assertFalse('test_doubleadd_2' in self.dict)
 
