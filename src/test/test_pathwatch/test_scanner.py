@@ -11,14 +11,7 @@ from pathwatch.scanner import Scanner
 
 def _get_sql_content(scanner):
     """Get the content of the database in the form of a dict"""
-    curs = scanner._db._cursor  # IGNORE:W0212
-    curs.execute('SELECT parent, name, mtime from files')
-    real_database = {}
-    row = curs.fetchone()
-    while row is not None:
-        real_database[os.path.join(row[0], row[1])] = row[2]
-        row = curs.fetchone()
-    return real_database
+    return scanner._db._get_full_content()  # IGNORE:W0212
 
 
 def _create_file(filename, database):

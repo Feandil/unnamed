@@ -136,3 +136,13 @@ class DBFilesHelper(DBHelper):
                                  ' WHERE parent = ? OR parent LIKE ?',
                                  (path, os.path.join(path, '%'),))
         self.delete_singles(root, names)
+
+    def _get_full_content(self):
+        """Fetch the whole content of the database, for testing purpose only"""
+        self._cursor.execute('SELECT parent, name, mtime from files')
+        real_database = {}
+        row = self._cursor.fetchone()
+        while row is not None:
+            real_database[os.path.join(row[0], row[1])] = row[2]
+            row = self._cursor.fetchone()
+        return real_database
