@@ -11,8 +11,8 @@ import sqlite3
 import os
 
 
-class DBFilesHelper(object):
-    """Database interactions for scanner & inotify thread"""
+class DBHelper(object):
+    """Base class for other helpers"""
 
     def __init__(self, database):
         self._con = sqlite3.connect(database, isolation_level=None)
@@ -21,6 +21,19 @@ class DBFilesHelper(object):
     def close(self):
         """Close the connection to the database"""
         self._con.close()
+
+class DBFilesHelper(DBHelper):
+    """Database interactions for adding/removing files and paths"""
+
+    def create_table(self):
+        """Create the file table needed for the algorithm"""
+        self._cursor.execute('CREATE TABLE files ('
+                             ' parent TEXT NOT NULL,'
+                             ' name TEXT NOT NULL,'
+                             ' mtime INTEGER,'
+                             ' identity INTEGER,'
+                             ' PRIMARY KEY (parent, name)'
+                             ')')
 
     def get_path(self, path):
         """Get the information about a file/folder"""
@@ -123,13 +136,3 @@ class DBFilesHelper(object):
                                  ' WHERE parent = ? OR parent LIKE ?',
                                  (path, os.path.join(path, '%'),))
         self.delete_singles(root, names)
-
-    def create_table(self):
-        """Create the file table needed for the algorithm"""
-        self._cursor.execute('CREATE TABLE files ('
-                             ' parent TEXT NOT NULL,'
-                             ' name TEXT NOT NULL,'
-                             ' mtime INTEGER,'
-                             ' identity INTEGER,'
-                             ' PRIMARY KEY (parent, name)'
-                             ')')
