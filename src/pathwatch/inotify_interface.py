@@ -208,17 +208,18 @@ class InotifyWatch(object):  # IGNORE:R0902
         self._started = False
 
     def start(self):
-        """Start the threads"""
+        """Start the threads, must not be called twice on the same instance"""
         assert(not self._started)
         self._scheduler.start()
         self._notifier.start()
         self._started = True
 
     def stop(self):
-        """"Stop the threads"""
+        """"Stop the threads, nop if non started"""
         if self._started:
             self._scheduler.stop()
             self._notifier.stop()
+        self._started = False
 
     def add(self, root):
         """Add a folder to the list of watched folders"""
