@@ -3,7 +3,7 @@
 import unittest
 import time
 
-from pathwatch import RemoveScheduler
+from pathwatch.remove_scheduler import RemoveScheduler
 
 
 class DictRemove(object):

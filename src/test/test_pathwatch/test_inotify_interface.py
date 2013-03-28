@@ -8,7 +8,7 @@ import Queue
 
 import os
 
-from pathwatch import InotifyWatch
+from pathwatch.inotify_interface import InotifyWatch
 
 
 class TestInotifyWatch(unittest.TestCase):  # IGNORE:R0904
