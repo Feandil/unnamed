@@ -1,3 +1,5 @@
+#!/usr/bin/python2
+
 '''Run all the tests'''
 
 import unittest
