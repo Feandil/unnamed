@@ -4,7 +4,7 @@ import sqlite3
 import os
 
 
-class DBHelper(object):
+class DBFilesHelper(object):
     """Database interactions for scanner & inotify thread"""
 
     def __init__(self, database):

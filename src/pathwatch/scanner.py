@@ -2,7 +2,7 @@
 
 import os
 
-from .database import DBHelper
+from .database import DBFilesHelper
 
 
 class Scanner(object):
@@ -13,7 +13,7 @@ class Scanner(object):
     """
 
     def __init__(self, database):
-        self._db = DBHelper(database)
+        self._db = DBFilesHelper(database)
 
     def create_table(self):
         """Create the underlying table for pathwatch"""
