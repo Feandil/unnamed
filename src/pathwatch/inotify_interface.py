@@ -1,6 +1,5 @@
 '''Interface with pyinotify'''
 
-from os import walk
 import os.path
 import pyinotify
 import threading
@@ -105,14 +104,14 @@ class _EventProcessing(_DefaultEventProcessing):
             else:
                 # Moved from an external place: new :)
                 assert(not hasattr(event, 'src_pathname'))
-                self._add_rec(event, True)
+                self._add_rec(event)
 
     def process_IN_CREATE(self, event):  # IGNORE:C0103
         """A file/folder was created"""
         # If it's a file, 'modified' will kick-in, otherwise manually auto_add
         # (strange things can happen with mkdir -p a/b/c)
         if event.dir:
-            self._add_rec(event, False)
+            self._add_rec(event)
             return
 
     def process_IN_DELETE(self, event):  # IGNORE:C0103
@@ -123,7 +122,7 @@ class _EventProcessing(_DefaultEventProcessing):
         else:
             self._queue.put(('remove_file', event.pathname))
 
-    def _add_rec(self, event, add_files):
+    def _add_rec(self, event):
         """Recursiverly add a folder to the watched ones"""
         try:
             with self._wd_lock:
@@ -137,13 +136,8 @@ class _EventProcessing(_DefaultEventProcessing):
             warn(InotifyTranscientPath("{}:{}".format(event.pathname, err)))
             return
 
+        # The listener should use the scanner to find sub-files/folders
         self._queue.put(('new_dir', event.pathname))
-        for root, dirs, files in walk(event.pathname):
-            for dirs_elt in dirs:
-                self._queue.put(('new_dir', os.path.join(root, dirs_elt)))
-            if add_files:
-                for files_elt in files:
-                    self._queue.put(('new_file', os.path.join(root, files_elt)))
 
     def delete(self, item):
         """Callback from the scheduler"""

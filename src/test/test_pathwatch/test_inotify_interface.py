@@ -145,7 +145,6 @@ class TestInotifyWatch(unittest.TestCase):  # IGNORE:R0904
         pos_1 = os.path.join(dir_1, 'dir')
         pos_2 = os.path.join(dir_2, 'dir')
         file_pos_1 = os.path.join(pos_1, 'file')
-        file_pos_2 = os.path.join(pos_2, 'file')
         os.mkdir(dir_1)
         os.mkdir(dir_2)
         os.mkdir(pos_1)
@@ -156,8 +155,6 @@ class TestInotifyWatch(unittest.TestCase):  # IGNORE:R0904
         time.sleep(1)
         self.assertFalse(self.queue.empty())
         self.assertEqual(('new_dir', pos_2), self.queue.get())
-        self.assertFalse(self.queue.empty())
-        self.assertEqual(('new_file', file_pos_2), self.queue.get())
 
     def test_movedir_from_root(self):
         """Try to move a dir containing a file from a watched area"""
