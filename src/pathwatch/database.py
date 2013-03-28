@@ -3,6 +3,7 @@
 import sqlite3
 import os
 
+
 class DBHelper(object):
     """Database interactions for scanner & inotify thread"""
 
@@ -37,7 +38,6 @@ class DBHelper(object):
                 files[row[0]] = row[1]
             row = self._cursor.fetchone()
         return (files, dirs)
-
 
     def insert_file(self, path, mtime):
         """Insert a new file"""
@@ -120,9 +120,9 @@ class DBHelper(object):
     def create_table(self):
         """Create the file table needed for the algorithm"""
         self._cursor.execute('CREATE TABLE files ('
-                       ' parent TEXT NOT NULL,'
-                       ' name TEXT NOT NULL,'
-                       ' mtime INTEGER,'
-                       ' identity INTEGER,'
-                       ' PRIMARY KEY (parent, name)'
-                       ')')
+                             ' parent TEXT NOT NULL,'
+                             ' name TEXT NOT NULL,'
+                             ' mtime INTEGER,'
+                             ' identity INTEGER,'
+                             ' PRIMARY KEY (parent, name)'
+                             ')')

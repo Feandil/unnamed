@@ -65,6 +65,9 @@ class _EventProcessing(_DefaultEventProcessing):
 
     def my_init(self, remove_scheduler=None, delay=10, outqueue=None,
                 **kargs):
+        """Called by pyinotify.ProcessEvent.__init__()
+        pyinotify documentation explicitly warns against modifying __init__,
+        thus we need to define our variables here, thus IGNORE:W0201"""
         super(_EventProcessing, self).my_init(**kargs)
         assert(remove_scheduler is not None)
         assert(outqueue is not None)
@@ -110,7 +113,6 @@ class _EventProcessing(_DefaultEventProcessing):
         # (strange things can happen with mkdir -p a/b/c)
         if event.dir:
             self._add_rec(event, False)
-            # Simple file: No need to be notified, will be notified when modified
             return
 
     def process_IN_DELETE(self, event):  # IGNORE:C0103
@@ -186,6 +188,7 @@ class _RootEventProcessing(_EventProcessing):
         # TODO: support move inside watched dirs IGNORE:W0511
         self._parent.die_on(InotifyRootMoved(event))
 
+
 class InotifyWatch(object):  # IGNORE:R0902
     """Interface to inotify, watch any folder"""
 
@@ -195,13 +198,13 @@ class InotifyWatch(object):  # IGNORE:R0902
         self._wd_lock = threading.RLock()
         self._scheduler = RemoveScheduler()
         self._queue = listener
-        kargs = {'parent':self,
-                'watch_manager':self._wm,
-                'watch_descriptors':self._wd,
-                'wd_lock':self._wd_lock,
-                'remove_scheduler':self._scheduler,
-                'delay':delay,
-                'outqueue':self._queue}
+        kargs = {'parent': self,
+                 'watch_manager': self._wm,
+                 'watch_descriptors': self._wd,
+                 'wd_lock': self._wd_lock,
+                 'remove_scheduler': self._scheduler,
+                 'delay': delay,
+                 'outqueue': self._queue}
         event_process = _EventProcessing(**kargs)
         self._rootevent_process = _RootEventProcessing(**kargs)
 

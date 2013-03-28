@@ -10,6 +10,7 @@ import os
 
 from pathwatch import InotifyWatch
 
+
 class TestInotifyWatch(unittest.TestCase):  # IGNORE:R0904
     """Test if InotifyWatch is working as predicted or not"""
 
@@ -175,4 +176,3 @@ class TestInotifyWatch(unittest.TestCase):  # IGNORE:R0904
         time.sleep(6)
         self.assertFalse(self.queue.empty())
         self.assertEqual(('remove_dir', pos_1), self.queue.get())
-

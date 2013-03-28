@@ -30,7 +30,7 @@ class TestRemoveScheduler(unittest.TestCase):  # IGNORE:R0904
 
     def setUp(self):  # IGNORE:C0103
         """Create a RemoveScheduler"""
-        self.dict = {'flag':'Not Empty'}
+        self.dict = {'flag': 'Not Empty'}
         self.remover = DictRemove(self.dict)
         self.scheduler = RemoveScheduler()
         self.scheduler.start()
@@ -119,7 +119,8 @@ class TestRemoveScheduler(unittest.TestCase):  # IGNORE:R0904
             self.fail('KeyError exception not raised')
         except KeyError:
             pass
-        self.assertRaises(KeyError, lambda (x, y, z): self.scheduler.add(x, y, z),
+        self.assertRaises(KeyError,
+                          lambda (x, y, z): self.scheduler.add(x, y, z),
                           (10, 'test_twice', self.remover))
         self.assertTrue('test_twice' in self.dict)
         time.sleep(6)

@@ -7,7 +7,7 @@ from .database import DBHelper
 
 class Scanner(object):
     """Scans filesystems from an entry point, populating the database
-    
+
         Need to be the only one that insert/delete rows in the database when running: no concurrency protection
         (Other threads/processes can still try to update those values, but need to handle row suppression)
     """
@@ -55,7 +55,7 @@ class Scanner(object):
             self._db.delete_paths(root, old_dirs - set(dirs))
             # Remove old files
             self._db.delete_singles(root,
-                                     set(old_files.keys()) - set(files))
+                                    set(old_files.keys()) - set(files))
             # Create new folders
             self._db.insert_dirs(root, set(dirs) - old_dirs)
             # Update files
@@ -81,4 +81,3 @@ class Scanner(object):
             self._scan_folder(path)
         else:
             self._scan_file(path)
-
