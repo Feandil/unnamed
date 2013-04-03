@@ -17,6 +17,11 @@ class DBHelper(object):
     def __init__(self, database):
         self._con = sqlite3.connect(database, isolation_level=None)
         self._cursor = self._con.cursor()
+        self.create_table()
+
+    def create_table(self):
+        """Create the table used by this helper"""
+        raise NotImplementedError("Sub-Classes need to implement create table")
 
     def close(self):
         """Close the connection to the database"""
