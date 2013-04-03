@@ -27,6 +27,36 @@ class DBHelper(object):
         """Close the connection to the database"""
         self._con.close()
 
+
+class DBRootHelper(DBHelper):
+    """"Database interaction for adding/removing/listing roots"""
+
+    def create_table(self):
+        """Create the file table needed for the algorithm"""
+        self._cursor.execute('CREATE TABLE IF NOT EXISTS roots ('
+                             ' path TEXT NOT NULL PRIMARY KEY'
+                             ')')
+
+    def add_root(self, path):
+        """Add a new root, should not be present before"""
+        self._cursor.execute(('INSERT INTO roots'
+                              ' (path)'
+                              ' VALUES (?)'),
+                             (path,))
+
+    def is_root(self, path):
+        """Test if given path is a root"""
+        self._cursor.execute(('SELECT path FROM roots'
+                              ' WHERE path = ?'),
+                             (path,))
+        return self._cursor.fetchone() is not None
+
+    def list_roots(self):
+        """List all the existing roots"""
+        self._cursor.execute('SELECT path FROM roots')
+        return [row[0] for row in self._cursor.fetchall()]
+
+
 class DBFilesHelper(DBHelper):
     """Database interactions for adding/removing files and paths"""
 
