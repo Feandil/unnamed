@@ -32,7 +32,7 @@ class DBFilesHelper(DBHelper):
 
     def create_table(self):
         """Create the file table needed for the algorithm"""
-        self._cursor.execute('CREATE TABLE files ('
+        self._cursor.execute('CREATE TABLE IF NOT EXISTS files ('
                              ' parent TEXT NOT NULL,'
                              ' name TEXT NOT NULL,'
                              ' mtime INTEGER,'
