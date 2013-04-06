@@ -14,9 +14,14 @@ import os
 class DBHelper(object):
     """Base class for other helpers"""
 
-    def __init__(self, database):
-        self._con = sqlite3.connect(database, isolation_level=None)
-        self._cursor = self._con.cursor()
+    def __init__(self, database, dbhelper=None):
+        if dbhelper is None:
+            self._con = sqlite3.connect(database, isolation_level=None)
+            self._cursor = self._con.cursor()
+        else:
+            # Using a cursor from another helper. It's ours, thus W0212
+            self._con = None
+            self._cursor = dbhelper._cursor  # pylint: disable=W0212
         self.create_table()
 
     def create_table(self):
@@ -25,7 +30,8 @@ class DBHelper(object):
 
     def close(self):
         """Close the connection to the database"""
-        self._con.close()
+        if self._con is not None:
+            self._con.close()
 
 
 class DBRootHelper(DBHelper):
@@ -62,11 +68,12 @@ class DBFilesHelper(DBHelper):
 
     def create_table(self):
         """Create the file table needed for the algorithm"""
+        DBHashHelper._create_table(self._cursor)
         self._cursor.execute('CREATE TABLE IF NOT EXISTS files ('
                              ' parent TEXT NOT NULL,'
                              ' name TEXT NOT NULL,'
                              ' mtime INTEGER,'
-                             ' identity INTEGER,'
+                             ' identity INTEGER REFERENCES hashes (id),'
                              ' PRIMARY KEY (parent, name)'
                              ')')
 
@@ -173,6 +180,52 @@ class DBFilesHelper(DBHelper):
                                  (path, os.path.join(path, '%'),))
         self.delete_singles(root, names)
 
+    def link_to_hash(self, path, rowid):
+        """Link a path to a hash"""
+        parent = os.path.dirname(path)
+        name = os.path.basename(path)
+        self._cursor.execute('UPDATE files'
+                             ' SET identity = ?'
+                             ' WHERE parent == ?  AND name == ?',
+                             (rowid, parent, name,))
+        return self._cursor.rowcount
+
+    def get_unhashed_files(self, max_files):
+        """Get at most <max> files that weren't hashed yet"""
+        self._cursor.execute('SELECT parent, name FROM files'
+                             ' WHERE identity IS 0 AND mtime IS NOT 0'
+                             ' LIMIT ?',
+                             (max_files,))
+        result = []
+        row = self._cursor.fetchone()
+        while row is not None:
+            result.append(os.path.join(row[0], row[1]))
+            row = self._cursor.fetchone()
+        return result
+
+    def _list_hashes(self):
+        """List all the files, with their hash_ids, for testing purpose only"""
+        self._cursor.execute('SELECT parent, name, identity FROM files'
+                             ' WHERE mtime IS NOT 0 AND identity IS NOT 0')
+        result = {}
+        row = self._cursor.fetchone()
+        while row is not None:
+            result[os.path.join(row[0], row[1])] = row[2]
+            row = self._cursor.fetchone()
+        return result
+
+    def _list_hashes_join(self):
+        """List all the files, with their hash_ids, for testing purpose only"""
+        self._cursor.execute('SELECT f.parent,f.name,h.crc,h.e2dk'
+                             ' FROM files AS f NATURAL LEFT JOIN hashes AS h'
+                             ' WHERE mtime IS NOT 0')
+        result = {}
+        row = self._cursor.fetchone()
+        while row is not None:
+            result[os.path.join(row[0], row[1])] = row[2:]
+            row = self._cursor.fetchone()
+        return result
+
     def _get_full_content(self):
         """Fetch the whole content of the database, for testing purpose only"""
         self._cursor.execute('SELECT parent, name, mtime from files')
@@ -180,5 +233,57 @@ class DBFilesHelper(DBHelper):
         row = self._cursor.fetchone()
         while row is not None:
             real_database[os.path.join(row[0], row[1])] = row[2]
+            row = self._cursor.fetchone()
+        return real_database
+
+
+class DBHashHelper(DBHelper):
+    """Database interactions for adding/removing hash on known files"""
+
+    @staticmethod
+    def _create_table(cursor):
+        """Create the file table needed for the storing hash"""
+        cursor.execute('CREATE TABLE IF NOT EXISTS hashes ('
+                       ' id INTEGER PRIMARY KEY,'
+                       ' crc TEXT NOT NULL,'
+                       ' e2dk TEXT NOT NULL,'
+                       ' content INTEGER,'
+                       ' upstream INTEGER,'
+                       ' UNIQUE (crc, e2dk)'
+                       ')')
+
+    def create_table(self):
+        """Create the file table needed for the storing hash"""
+        DBHashHelper._create_table(self._cursor)
+
+    def _get_id(self, e2dk, crc):
+        """Return the id of a given hash"""
+        self._cursor.execute('SELECT id FROM hashes'
+                             ' WHERE e2dk = ? AND crc = ?',
+                             (e2dk, crc,))
+        return self._cursor.fetchone()
+
+    def insert_hash(self, e2dk, crc):
+        """Insert a new hash into the database"""
+        try:
+            self._cursor.execute('INSERT INTO hashes'
+                                 ' (e2dk, crc) '
+                                 ' VALUES (?, ?)',
+                                 (e2dk, crc,))
+            return self._cursor.lastrowid
+        except sqlite3.IntegrityError as sqlie:
+            rowid = self._get_id(e2dk, crc)
+            if rowid is None:
+                raise sqlie
+            else:
+                return rowid[0]
+
+    def _get_full_content(self):
+        """Fetch the whole content of the database, for testing purpose only"""
+        self._cursor.execute('SELECT id, e2dk, crc from hashes')
+        real_database = {}
+        row = self._cursor.fetchone()
+        while row is not None:
+            real_database[row[0]] = row[1:]
             row = self._cursor.fetchone()
         return real_database
