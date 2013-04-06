@@ -105,7 +105,7 @@ class DBFilesHelper(DBHelper):
 
     def insert_dir(self, path):
         """Insert a new folder"""
-        # TODO: Check if the dir is an existing root ! IGNORE:W0511
+        # TODO: Check if the dir is an existing root !
         self.insert_file(path, 0)
 
     def insert_files(self, new_data):

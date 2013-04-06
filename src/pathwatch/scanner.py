@@ -15,8 +15,9 @@ from .database import DBFilesHelper
 class Scanner(object):
     """Scans filesystems from an entry point, populating the database
 
-        Need to be the only one that insert/delete rows in the database when running: no concurrency protection
-        (Other threads/processes can still try to update those values, but need to handle row suppression)
+        Need to be the only one that insert/delete rows in the database when
+        running: no concurrency protection (Other threads/processes can still
+        try to update those values, but need to handle row suppression)
     """
 
     def __init__(self, database):

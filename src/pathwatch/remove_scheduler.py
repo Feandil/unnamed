@@ -15,7 +15,8 @@ import threading
 
 
 class RemoveScheduler(threading.Thread):
-    """Run a scheduler in a dedicated thread. Wait on an 'add' if schedule empty
+    """Run a scheduler in a dedicated thread.
+       Wait on an 'add' if schedule empty
         Warning: no concurrency protection between last event and add !
     """
 

@@ -10,8 +10,9 @@ from pathwatch.scanner import Scanner
 
 
 def _get_sql_content(scanner):
-    """Get the content of the database in the form of a dict"""
-    return scanner._db._get_full_content()  # IGNORE:W0212
+    """Get the content of the database in the form of a dict,
+    Uses the protected _get_full_content to do so"""
+    return scanner._db._get_full_content()  # pylint: disable=W0212
 
 
 def _create_file(filename, database):
@@ -36,15 +37,15 @@ def _delete_path(path, database):
     del database[path]
 
 
-class TestScanner(unittest.TestCase):  # IGNORE:R0904
+class TestScanner(unittest.TestCase):  # pylint: disable=R0904
     """Test if the Scanner is working as predicted or not"""
 
-    def setUp(self):  # IGNORE:C0103
+    def setUp(self):  # pylint: disable=C0103
         """Create a Scanner with an in-memory database"""
         self.scanner = Scanner(':memory:')
         self.tempdir = tempfile.mkdtemp()
 
-    def tearDown(self):  # IGNORE:C0103
+    def tearDown(self):  # pylint: disable=C0103
         """Delete the internal Scanner"""
         self.scanner.close()
         shutil.rmtree(self.tempdir, ignore_errors=True)
@@ -105,7 +106,8 @@ class TestScanner(unittest.TestCase):  # IGNORE:R0904
         self.assertDictEqual(database, _get_sql_content(self.scanner))
 
     def test_scan_dir_file_delete_file(self):
-        """Scan a folder containing one folder and a file inside it, delete the file"""
+        """Scan a folder containing one folder and a file inside it,
+        delete the file"""
         self.scanner.create_table()
         database = {self.tempdir: 0}
         dir_name = os.path.join(self.tempdir, 'a')
@@ -119,7 +121,8 @@ class TestScanner(unittest.TestCase):  # IGNORE:R0904
         self.assertDictEqual(database, _get_sql_content(self.scanner))
 
     def test_scan_dir_file_delete_dir(self):
-        """Scan a folder containing one folder and a file inside it, delete the folder"""
+        """Scan a folder containing one folder and a file inside it,
+        delete the folder"""
         self.scanner.create_table()
         database = {self.tempdir: 0}
         dir_name = os.path.join(self.tempdir, 'a')

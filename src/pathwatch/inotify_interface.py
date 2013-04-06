@@ -22,34 +22,39 @@ from .remove_scheduler import RemoveScheduler
 class _DefaultEventProcessing(pyinotify.ProcessEvent):
     """Base event processing, cover the weird cases"""
 
-    # Those import DO exist, event if some IDE fail to understand it
-    MASK = (pyinotify.IN_UNMOUNT | pyinotify.IN_Q_OVERFLOW |  # IGNORE:E1101
-            pyinotify.IN_IGNORED)  # IGNORE:E1101
+    # Those import DO exist, event if some IDE/pylint fail to understand it
+    MASK = (pyinotify.IN_Q_OVERFLOW |  # pylint: disable=E1101
+            pyinotify.IN_UNMOUNT |  # pylint: disable=E1101
+            pyinotify.IN_IGNORED)  # pylint: disable=E1101
 
-    def my_init(self, parent=None, watch_manager=None,  # IGNORE:W0221
+    def my_init(self, parent=None, watch_manager=None,  # pylint: disable=W0221
                 watch_descriptors=None, wd_lock=None):
         """Called by pyinotify.ProcessEvent.__init__()
         pyinotify documentation explicitly warns against modifying __init__,
-        thus we need to define our variables here, thus IGNORE:W0201"""
+        thus we need to define our variables here, thus we violate W0201.
+        Parent my_init uses **kargs, thus we violate W0221."""
         assert(parent is not None)
         assert(watch_manager is not None)
         assert(watch_descriptors is not None)
         assert(wd_lock is not None)
-        self._parent = parent  # IGNORE:W0201
-        self._wm = watch_manager  # IGNORE:W0201
-        self._wd = watch_descriptors  # IGNORE:W0201
-        self._wd_lock = wd_lock  # IGNORE:W0201
+        self._parent = parent  # pylint: disable=W0201
+        self._wm = watch_manager  # pylint: disable=W0201
+        self._wd = watch_descriptors  # pylint: disable=W0201
+        self._wd_lock = wd_lock  # pylint: disable=W0201
 
-    def process_IN_UNMOUNT(self, event):  # IGNORE:C0103
-        """The whole fs was unmount, global failure !"""
+    def process_IN_UNMOUNT(self, event):  # pylint: disable=C0103
+        """The whole fs was unmount, global failure !
+        Non-standard method name set by libnotify"""
         self._parent.die_on(warn(InotifyFSUnmount(event)))
 
-    def process_IN_Q_OVERFLOW(self, event):  # IGNORE:C0103
-        """The event queue overflowed, global failure !"""
+    def process_IN_Q_OVERFLOW(self, event):  # pylint: disable=C0103
+        """The event queue overflowed, global failure !
+        Non-standard method name set by libnotify"""
         self._parent.die_on(warn(InotifyQueueOverflow(event)))
 
-    def process_IN_IGNORED(self, event):  # IGNORE:C0103
-        """This watch will now be ignored by pynotify"""
+    def process_IN_IGNORED(self, event):  # pylint: disable=C0103
+        """This watch will now be ignored by pynotify
+        Non-standard method name set by libnotify"""
         try:
             with self._wd_lock:
                 del self._wd[event.pathname]
@@ -64,37 +69,43 @@ class _DefaultEventProcessing(pyinotify.ProcessEvent):
 class _EventProcessing(_DefaultEventProcessing):
     """Process events from inotify on normal nodes"""
 
-    # Those import DO exist, event if some IDE fail to understand it
-    MASK = (_DefaultEventProcessing.MASK | pyinotify.IN_CLOSE_WRITE |  # IGNORE:E1101
-            pyinotify.IN_MOVED_FROM | pyinotify.IN_MOVED_TO |  # IGNORE:E1101
-            pyinotify.IN_CREATE | pyinotify.IN_DELETE)  # IGNORE:E1101
+    # Those import DO exist, event if some IDE/pylint fail to understand it
+    MASK = (_DefaultEventProcessing.MASK |
+            pyinotify.IN_CLOSE_WRITE |  # pylint: disable=E1101
+            pyinotify.IN_MOVED_FROM |  # pylint: disable=E1101
+            pyinotify.IN_MOVED_TO |  # pylint: disable=E1101
+            pyinotify.IN_CREATE |  # pylint: disable=E1101
+            pyinotify.IN_DELETE)  # pylint: disable=E1101
 
     def my_init(self, remove_scheduler=None, delay=10, outqueue=None,
                 **kargs):
         """Called by pyinotify.ProcessEvent.__init__()
         pyinotify documentation explicitly warns against modifying __init__,
-        thus we need to define our variables here, thus IGNORE:W0201"""
+        thus we need to define our variables here, thus we violate W0201."""
         super(_EventProcessing, self).my_init(**kargs)
         assert(remove_scheduler is not None)
         assert(outqueue is not None)
-        self._moving = {}  # IGNORE:W0201
-        self._move_lock = threading.RLock()  # IGNORE:W0201
-        self._scheduler = remove_scheduler  # IGNORE:W0201
-        self._delay = delay  # IGNORE:W0201
-        self._queue = outqueue  # IGNORE:W0201
+        self._moving = {}  # pylint: disable=W0201
+        self._move_lock = threading.RLock()  # pylint: disable=W0201
+        self._scheduler = remove_scheduler  # pylint: disable=W0201
+        self._delay = delay  # pylint: disable=W0201
+        self._queue = outqueue  # pylint: disable=W0201
 
-    def process_IN_CLOSE_WRITE(self, event):  # IGNORE:C0103
-        """A file was modified"""
+    def process_IN_CLOSE_WRITE(self, event):  # pylint: disable=C0103
+        """A file was modified
+        Non-standard method name set by libnotify"""
         self._queue.put(('modified', event.pathname))
 
-    def process_IN_MOVED_FROM(self, event):  # IGNORE:C0103
-        """A file/folder was moved in"""
+    def process_IN_MOVED_FROM(self, event):  # pylint: disable=C0103
+        """A file/folder was moved in
+        Non-standard method name set by libnotify"""
         with self._move_lock:
             self._moving[event.cookie] = event.pathname
             self._scheduler.add(self._delay, event.cookie, self)
 
-    def process_IN_MOVED_TO(self, event):  # IGNORE:C0103
-        """A file/folder was moved out"""
+    def process_IN_MOVED_TO(self, event):  # pylint: disable=C0103
+        """A file/folder was moved out
+        Non-standard method name set by libnotify"""
         self._scheduler.cancel(event.cookie)
         with self._move_lock:
             if event.cookie in self._moving:
@@ -113,16 +124,18 @@ class _EventProcessing(_DefaultEventProcessing):
                 assert(not hasattr(event, 'src_pathname'))
                 self._add_rec(event)
 
-    def process_IN_CREATE(self, event):  # IGNORE:C0103
-        """A file/folder was created"""
+    def process_IN_CREATE(self, event):  # pylint: disable=C0103
+        """A file/folder was created
+        Non-standard method name set by libnotify"""
         # If it's a file, 'modified' will kick-in, otherwise manually auto_add
         # (strange things can happen with mkdir -p a/b/c)
         if event.dir:
             self._add_rec(event)
             return
 
-    def process_IN_DELETE(self, event):  # IGNORE:C0103
-        """A file/folder was deleted"""
+    def process_IN_DELETE(self, event):  # pylint: disable=C0103
+        """A file/folder was deleted
+        Non-standard method name set by libnotify"""
         # The watcher is removed later by IN_IGNORE
         if event.dir:
             self._queue.put(('remove_dir', event.pathname))
@@ -176,21 +189,24 @@ class _EventProcessing(_DefaultEventProcessing):
 
 class _RootEventProcessing(_EventProcessing):
     """Process events from inotify"""
-    # Those import DO exist, event if some IDE fail to understand it
-    MASK = (_EventProcessing.MASK | pyinotify.IN_DELETE_SELF |  # IGNORE:E1101
-            pyinotify.IN_MOVE_SELF)  # IGNORE:E1101
+    # Those import DO exist, event if some IDE/pylint fail to understand it
+    MASK = (_EventProcessing.MASK |
+            pyinotify.IN_DELETE_SELF |  # pylint: disable=E1101
+            pyinotify.IN_MOVE_SELF)  # pylint: disable=E1101
 
-    def process_IN_DELETE_SELF(self, event):  # IGNORE:C0103
-        """The root folder was deleted, failure"""
+    def process_IN_DELETE_SELF(self, event):  # pylint: disable=C0103
+        """The root folder was deleted, failure
+        Non-standard method name set by libnotify"""
         self._parent.die_on(InotifyRootDeleted(event))
 
-    def process_IN_MOVE_SELF(self, event):  # IGNORE:C0103
-        """The root folder was moved, failure"""
-        # TODO: support move inside watched dirs IGNORE:W0511
+    def process_IN_MOVE_SELF(self, event):  # pylint: disable=C0103
+        """The root folder was moved, failure
+        Non-standard method name set by libnotify"""
+        # TODO: support move inside watched dirs
         self._parent.die_on(InotifyRootMoved(event))
 
 
-class InotifyWatch(object):  # IGNORE:R0902
+class InotifyWatch(object):
     """Interface to inotify, watch any folder"""
 
     def __init__(self, listener, delay=2):
@@ -206,11 +222,11 @@ class InotifyWatch(object):  # IGNORE:R0902
                  'remove_scheduler': self._scheduler,
                  'delay': delay,
                  'outqueue': self._queue}
-        event_process = _EventProcessing(**kargs)
+        ev_proc = _EventProcessing(**kargs)
         self._rootevent_process = _RootEventProcessing(**kargs)
 
         self._notifier = pyinotify.ThreadedNotifier(self._wm,
-                                                    default_proc_fun=event_process)  # IGNORE:C0301
+                                                    default_proc_fun=ev_proc)
 
         self._started = False
 

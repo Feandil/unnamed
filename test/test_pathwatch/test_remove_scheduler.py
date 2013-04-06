@@ -25,17 +25,17 @@ class DictRemove(object):
         return not self._err
 
 
-class TestRemoveScheduler(unittest.TestCase):  # IGNORE:R0904
+class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
     """Test if the RemoveScheduler is working as predicted or not"""
 
-    def setUp(self):  # IGNORE:C0103
+    def setUp(self):  # pylint: disable=C0103
         """Create a RemoveScheduler"""
         self.dict = {'flag': 'Not Empty'}
         self.remover = DictRemove(self.dict)
         self.scheduler = RemoveScheduler()
         self.scheduler.start()
 
-    def tearDown(self):  # IGNORE:C0103
+    def tearDown(self):  # pylint: disable=C0103
         """Delete the internal scheduler"""
         self.scheduler.stop()
         self.assertTrue(self.remover.good())

@@ -11,17 +11,17 @@ import os
 from pathwatch.inotify_interface import InotifyWatch
 
 
-class TestInotifyWatch(unittest.TestCase):  # IGNORE:R0904
+class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
     """Test if InotifyWatch is working as predicted or not"""
 
-    def setUp(self):  # IGNORE:C0103
+    def setUp(self):  # pylint: disable=C0103
         """Create a RemoveScheduler"""
         self.queue = Queue.Queue()
         self.watch = InotifyWatch(self.queue)
         self.tempdir = tempfile.mkdtemp()
         self.watch.start()
 
-    def tearDown(self):  # IGNORE:C0103
+    def tearDown(self):  # pylint: disable=C0103
         """Delete the internal scheduler"""
         time.sleep(1)
         self.watch.stop()
