@@ -122,7 +122,10 @@ class _EventProcessing(_DefaultEventProcessing):
             else:
                 # Moved from an external place: new :)
                 assert(not hasattr(event, 'src_pathname'))
-                self._add_rec(event)
+                if event.dir:
+                    self._add_rec(event)
+                else:
+                    self._queue.put(('modified', event.pathname))
 
     def process_IN_CREATE(self, event):  # pylint: disable=C0103
         """A file/folder was created
