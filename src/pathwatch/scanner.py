@@ -86,3 +86,11 @@ class Scanner(object):
             self._scan_folder(path)
         else:
             self._scan_file(path)
+
+    def scan_file(self, path):
+        """Scan a  file (abort if folder)"""
+        if not os.path.exists(path):
+            self._db.delete_path(path)
+            return
+        if not os.path.isdir(path):
+            self._scan_file(path)
