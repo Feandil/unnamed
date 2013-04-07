@@ -244,6 +244,10 @@ class InotifyWatch(object):
             self._notifier.stop()
         self._started = False
 
+    def started(self):
+        """"Check if we started"""
+        return self._started
+
     def add(self, root):
         """Add a folder to the list of watched folders"""
         assert(os.path.isdir(root))
