@@ -110,6 +110,7 @@ class PathWatch(threading.Thread):
     def stop(self):
         """Stop everything"""
         self._end.set()
+        self._inc_queue.put(('Shutdown'))
         self.join()
 
     def add_root(self, path):
