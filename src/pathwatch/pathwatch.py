@@ -50,14 +50,18 @@ class PathWatch(threading.Thread):
             self._filedb.delete_single(update[1])
         elif cmd == 'new_dir':
             if concurrent is None:
-                self._check_paths(update[1], notify)
+                self._check_path(update[1], notify)
             else:
                 concurrent.add(update[1])
         else:
             self.die('Unknown innotify_update: {}'.format(';'.join(update)))
 
+    def _check_path(self, path, notify=True):
+        """Re-scan one path and recursively scan concurrent modifications"""
+        self._check_paths([path], notify)
+
     def _check_paths(self, paths, notify=True):
-        """Re-scan those paths and recursively scan """
+        """Re-scan those paths and recursively scan concurrent modifications"""
         for path in paths:
             self._scanner.scan(path)
         concurrent_updates = set()
