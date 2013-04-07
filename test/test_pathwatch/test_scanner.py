@@ -52,19 +52,16 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_createtable(self):
         """Just create a table"""
-        self.scanner.create_table()
         self.assertDictEqual({}, _get_sql_content(self.scanner))
 
     def test_scan_empty(self):
         """Scan an empty folder"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         self.scanner.scan(self.tempdir)
         self.assertDictEqual(database, _get_sql_content(self.scanner))
 
     def test_scan_empty_two_times(self):
         """Scan an empty folder"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         self.scanner.scan(self.tempdir)
         self.assertDictEqual(database, _get_sql_content(self.scanner))
@@ -73,7 +70,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_scan_dir_two_times(self):
         """Scan a folder containing one folder"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         dir_name = os.path.join(self.tempdir, 'a')
         _create_dir(dir_name, database)
@@ -84,7 +80,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_scan_dir_delete_it(self):
         """Scan a folder containing one folder and rescan after deletion"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         dir_name = os.path.join(self.tempdir, 'a')
         _create_dir(dir_name, database)
@@ -96,7 +91,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_scan_dir_file(self):
         """Scan a folder containing one folder and a file inside it"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         dir_name = os.path.join(self.tempdir, 'a')
         file_name = os.path.join(dir_name, 'b')
@@ -108,7 +102,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
     def test_scan_dir_file_delete_file(self):
         """Scan a folder containing one folder and a file inside it,
         delete the file"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         dir_name = os.path.join(self.tempdir, 'a')
         file_name = os.path.join(dir_name, 'b')
@@ -123,7 +116,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
     def test_scan_dir_file_delete_dir(self):
         """Scan a folder containing one folder and a file inside it,
         delete the folder"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         dir_name = os.path.join(self.tempdir, 'a')
         file_name = os.path.join(dir_name, 'b')
@@ -138,7 +130,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_more_files(self):
         """Scan a folder containing a complexe tree"""
-        self.scanner.create_table()
         dir_name_1 = os.path.join(self.tempdir, 'a')
         dir_name_2 = os.path.join(self.tempdir, 'b')
         file_name_1 = os.path.join(dir_name_1, 'c')
@@ -155,7 +146,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_more_files_delete_path(self):
         """Scan a folder containing a complexe tree"""
-        self.scanner.create_table()
         dir_name_1 = os.path.join(self.tempdir, 'a')
         dir_name_2 = os.path.join(self.tempdir, 'b')
         file_name_1 = os.path.join(dir_name_1, 'c')
@@ -178,7 +168,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_transfort_file_path(self):
         """Transform a file into a folder with a file inside"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         file_dir_name = os.path.join(self.tempdir, 'a')
         file_name = os.path.join(file_dir_name, 'b')
@@ -193,7 +182,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_transfort_path_file(self):
         """Transform a folder with a file inside into a file"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         file_dir_name = os.path.join(self.tempdir, 'a')
         file_name = os.path.join(file_dir_name, 'b')
@@ -209,7 +197,6 @@ class TestScanner(unittest.TestCase):  # pylint: disable=R0904
 
     def test_modify_file(self):
         """Modify a file a check if the mtime was updated"""
-        self.scanner.create_table()
         database = {self.tempdir: 0}
         file_name = os.path.join(self.tempdir, 'a')
         _create_file(file_name, database)

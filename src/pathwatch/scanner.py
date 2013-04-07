@@ -22,9 +22,6 @@ class Scanner(object):
 
     def __init__(self, database):
         self._db = DBFilesHelper(database)
-
-    def create_table(self):
-        """Create the underlying table for pathwatch"""
         self._db.create_table()
 
     def close(self):
