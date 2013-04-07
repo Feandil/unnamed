@@ -133,6 +133,23 @@ class DBFilesHelper(DBHelper):
                                   ' VALUES (0, ?, ? ,0)'),
                                  iter([(root, name) for name in names]))
 
+    def move_file(self, old_path, new_path):
+        """Move a file"""
+        old_parent = os.path.dirname(old_path)
+        old_name = os.path.basename(old_path)
+        new_parent = os.path.dirname(new_path)
+        new_name = os.path.basename(new_path)
+        self._cursor.execute('UPDATE files SET parent = ?, name = ?'
+                             ' WHERE parent == ? AND name == ?',
+                             (new_parent, new_name, old_parent, old_name,))
+
+    def move_dir(self, old_path, new_path):
+        """Move a folder"""
+        self._cursor.execute('UPDATE files SET parent = replace(parent, ?, ?)'
+                             ' WHERE parent like ?',
+                             (old_path, new_path, old_path + '%',))
+        self.move_file(old_path, new_path)
+
     def update_file(self, path, mtime):
         """Update the mtime information about a file"""
         parent = os.path.dirname(path)

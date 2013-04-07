@@ -2,6 +2,8 @@
 
 from pathwatch.database import DBRootHelper, DBFilesHelper, DBHashHelper
 
+import os.path
+import re
 import unittest
 
 
@@ -58,11 +60,69 @@ class TestDBFiles(unittest.TestCase):  # pylint: disable=R0904
         """Create an empty database and list it"""
         pass
 
+    def _insert_file(self, path, mtime):
+        """Helper: add a file in db and in expected db"""
+        self._db.insert_file(path, mtime)
+        self.expected_db[path] = mtime
+
+    def _insert_dir(self, path):
+        """Helper: add a dir in db and in expected db"""
+        self._insert_file(path, 0)
+
+    def _expected_move(self, old_root, new_root, complete_path):
+        """Helper: add a move a path in expected db"""
+        new_path = re.sub(old_root, new_root, complete_path)
+        self.expected_db[new_path] = self.expected_db[complete_path]
+        del self.expected_db[complete_path]
+
     def test_insert_file(self):
         """Insert a single file"""
-        path = "/home/42"
-        self._db.insert_file(path, 43)
-        self.expected_db[path] = 43
+        self._insert_file("/home/a", 42)
+
+    def test_move_file(self):
+        """Move single file"""
+        path_1 = "/home/a"
+        path_2 = "/home/b"
+        self._insert_file(path_1, 42)
+        self._db.move_file(path_1, path_2)
+        self._expected_move(path_1, path_2, path_1)
+
+    def test_move_simple_folder(self):
+        """Move a folder containing a file"""
+        dir_1 = "/home/a"
+        dir_2 = "/home/b"
+        filename = os.path.join(dir_1, 'a')
+        self._insert_dir(dir_1)
+        self._insert_file(filename, 42)
+        self._db.move_dir(dir_1, dir_2)
+        self._expected_move(dir_1, dir_2, dir_1)
+        self._expected_move(dir_1, dir_2, filename)
+
+    def test_move_recursive(self):
+        """Move a folder containing a file"""
+        base_dir = '/home/a'
+        new_dir = '/home/b'
+        first_dir = os.path.join(base_dir, 'a')
+        second_dir = os.path.join(base_dir, 'b')
+        third_dir = os.path.join(first_dir, 'a')
+        first_file = os.path.join(first_dir, '1')
+        second_file = os.path.join(second_dir, '2')
+        third_file = os.path.join(third_dir, '3')
+        self._insert_dir(base_dir)
+        self._insert_dir(first_dir)
+        self._insert_dir(second_dir)
+        self._insert_dir(third_dir)
+        self._insert_file(first_file, 42)
+        self._insert_file(second_file, 43)
+        self._insert_file(third_file, 43)
+        self._db.move_dir(base_dir, new_dir)
+        self._expected_move(base_dir, new_dir, base_dir)
+        self._expected_move(base_dir, new_dir, first_dir)
+        self._expected_move(base_dir, new_dir, second_dir)
+        self._expected_move(base_dir, new_dir, third_dir)
+        self._expected_move(base_dir, new_dir, first_file)
+        self._expected_move(base_dir, new_dir, second_file)
+        self._expected_move(base_dir, new_dir, third_file)
 
     # TODO: test all the functions
 
