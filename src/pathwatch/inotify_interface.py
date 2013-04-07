@@ -101,12 +101,12 @@ class _EventProcessing(_DefaultEventProcessing):
         Non-standard method name set by libnotify"""
         with self._move_lock:
             self._moving[event.cookie] = event.pathname
-            self._scheduler.add(self._delay, event.cookie, self)
+            self._scheduler.add(self._delay, (event.cookie, event.dir), self)
 
     def process_IN_MOVED_TO(self, event):  # pylint: disable=C0103
         """A file/folder was moved out
         Non-standard method name set by libnotify"""
-        self._scheduler.cancel(event.cookie)
+        self._scheduler.cancel((event.cookie, event.dir))
         with self._move_lock:
             if event.cookie in self._moving:
                 # moved from watched place
@@ -159,15 +159,19 @@ class _EventProcessing(_DefaultEventProcessing):
         # The listener should use the scanner to find sub-files/folders
         self._queue.put(('new_dir', event.pathname))
 
-    def delete(self, item):
+    def delete(self, data):
         """Callback from the scheduler"""
+        (cookie, is_dir) = data
         with self._move_lock:
             path = None
             try:
-                path = self._moving[item]
-                del self._moving[item]
+                path = self._moving[cookie]
+                del self._moving[cookie]
             except KeyError:
                 # Already removed
+                return
+            if not is_dir:
+                self._queue.put(('remove_file', path))
                 return
             with self._wd_lock:
                 remove_wd = []
