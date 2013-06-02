@@ -11,6 +11,19 @@ import os
 from pathwatch.inotify_interface import InotifyWatch
 
 
+def stop_on_interrupt(fun):
+    """Stop internal watcher (as a decorator)"""
+    def wrapped(self, *args, **kwargs):
+        """Wrapp the function in a except KeyboardInterrupt"""
+        try:
+            fun(self, *args, **kwargs)
+        except KeyboardInterrupt as err:
+            self.watch.stop()
+            shutil.rmtree(self.tempdir, ignore_errors=True)
+            raise err
+    return wrapped
+
+
 class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
     """Test if InotifyWatch is working as predicted or not"""
 
@@ -21,6 +34,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.tempdir = tempfile.mkdtemp()
         self.watch.start()
 
+    @stop_on_interrupt
     def tearDown(self):  # pylint: disable=C0103
         """Delete the internal scheduler"""
         time.sleep(1)
@@ -33,6 +47,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         """Try to monitor one path"""
         self.watch.add(self.tempdir)
 
+    @stop_on_interrupt
     def test_create_file(self):
         """Try to create a file"""
         self.watch.add(self.tempdir)
@@ -43,6 +58,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse(self.queue.empty())
         self.assertEqual(('modified', newfile), self.queue.get())
 
+    @stop_on_interrupt
     def test_createremove_file(self):
         """Try to create and remove a file"""
         self.watch.add(self.tempdir)
@@ -56,6 +72,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse(self.queue.empty())
         self.assertEqual(('remove_file', newfile), self.queue.get())
 
+    @stop_on_interrupt
     def test_create_dir(self):
         """Try to create  a dir"""
         self.watch.add(self.tempdir)
@@ -65,6 +82,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse(self.queue.empty())
         self.assertEqual(('new_dir', newdir), self.queue.get())
 
+    @stop_on_interrupt
     def test_createremove_dir(self):
         """Try to create and remove a dir"""
         self.watch.add(self.tempdir)
@@ -78,6 +96,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse(self.queue.empty())
         self.assertEqual(('remove_dir', newdir), self.queue.get())
 
+    @stop_on_interrupt
     def test_create_dir_and_file(self):
         """Try to create and remove a dir"""
         self.watch.add(self.tempdir)
@@ -93,6 +112,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse(self.queue.empty())
         self.assertEqual(('modified', newfile), self.queue.get())
 
+    @stop_on_interrupt
     def test_two_roots(self):
         """Try to create and remove a dir"""
         dir_1 = os.path.join(self.tempdir, 'root_1')
@@ -102,6 +122,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.watch.add(dir_1)
         self.watch.add(dir_2)
 
+    @stop_on_interrupt
     def test_movefile_between_roots(self):
         """Try to move a file between two watched areas"""
         dir_1 = os.path.join(self.tempdir, 'root_1')
@@ -119,6 +140,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse(self.queue.empty())
         self.assertEqual(('move_file', pos_1, pos_2), self.queue.get())
 
+    @stop_on_interrupt
     def test_movedir_between_roots(self):
         """Try to move a dir between two watched areas"""
         dir_1 = os.path.join(self.tempdir, 'root_1')
@@ -138,6 +160,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse(self.queue.empty())
         self.assertEqual(('move_dir', pos_1, pos_2), self.queue.get())
 
+    @stop_on_interrupt
     def test_movedir_to_root(self):
         """Try to move a dir containing a file into a watched area"""
         dir_1 = os.path.join(self.tempdir, 'root_1')
@@ -156,6 +179,7 @@ class TestInotifyWatch(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse(self.queue.empty())
         self.assertEqual(('new_dir', pos_2), self.queue.get())
 
+    @stop_on_interrupt
     def test_movedir_from_root(self):
         """Try to move a dir containing a file from a watched area"""
         dir_1 = os.path.join(self.tempdir, 'root_1')

@@ -25,6 +25,18 @@ class DictRemove(object):
         return not self._err
 
 
+def stop_on_interrupt(fun):
+    """Stop internal scheduler (as a decorator)"""
+    def wrapped(self, *args, **kwargs):
+        """Wrapp the function in a except KeyboardInterrupt"""
+        try:
+            fun(self, *args, **kwargs)
+        except KeyboardInterrupt as err:
+            self.scheduler.stop()
+            raise err
+    return wrapped
+
+
 class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
     """Test if the RemoveScheduler is working as predicted or not"""
 
@@ -42,10 +54,12 @@ class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
         self.assertTrue('flag' in self.dict)
         self.assertFalse('noflag' in self.dict)
 
+    @stop_on_interrupt
     def test_empty(self):
         """Just start and stop"""
         pass
 
+    @stop_on_interrupt
     def test_add(self):
         """Verify that one item is correctly removed"""
         self.dict['test_add'] = 'Not Working'
@@ -54,6 +68,7 @@ class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
         time.sleep(6)
         self.assertFalse('test_add' in self.dict)
 
+    @stop_on_interrupt
     def test_doubleadd(self):
         """Verify that two items are correctly removed"""
         self.dict['test_doubleadd_1'] = 'Not Working'
@@ -68,6 +83,7 @@ class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse('test_doubleadd_1' in self.dict)
         self.assertFalse('test_doubleadd_2' in self.dict)
 
+    @stop_on_interrupt
     def test_cancel(self):
         """Verify that one item is correctly removed"""
         self.dict['test_cancel'] = 'Working'
@@ -77,6 +93,7 @@ class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
         self.assertTrue('test_cancel' in self.dict)
         del self.dict['test_cancel']
 
+    @stop_on_interrupt
     def test_halfcancel(self):
         """Verify that one item is correctly removed and the other one kept"""
         self.dict['test_halfcancel_keep'] = 'Working'
@@ -93,6 +110,7 @@ class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse('test_halfcancel_remove' in self.dict)
         del self.dict['test_halfcancel_keep']
 
+    @stop_on_interrupt
     def test_ordering(self):
         """Verify that objects are removed in the correct order"""
         self.dict['test_ordering_first'] = 'Working'
@@ -110,6 +128,7 @@ class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
         self.assertFalse('test_ordering_first' in self.dict)
         self.assertFalse('test_ordering_second' in self.dict)
 
+    @stop_on_interrupt
     def test_setcancelset(self):
         """Verify that we can safely set-cancel-set the same item"""
         self.dict['test_setcancelset'] = 'mmmm'
@@ -122,6 +141,7 @@ class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
         time.sleep(6)
         self.assertFalse('test_setcancelset' in self.dict)
 
+    @stop_on_interrupt
     def test_errorondoubleadd(self):
         """Verify that we cannot add the same thing twice"""
         self.dict['test_twice'] = 'mmmm'
