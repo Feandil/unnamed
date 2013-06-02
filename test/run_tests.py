@@ -8,12 +8,12 @@ import os
 if len(sys.argv) > 1:
     sys.path.insert(0, sys.argv[1])
 else:
-    base = os.path.abspath(__file__)
-    dir = os.path.dirname(base)
-    target = os.path.join(dir, '..', 'src')
-    clean = os.path.abspath(target)
-    assert(os.path.isdir(clean))
-    sys.path.insert(0, clean)
+    BASE = os.path.abspath(__file__)
+    DIR = os.path.dirname(BASE)
+    TARGET = os.path.join(DIR, '..', 'src')
+    CLEAN = os.path.abspath(TARGET)
+    assert(os.path.isdir(CLEAN))
+    sys.path.insert(0, CLEAN)
 
 import unittest
 
