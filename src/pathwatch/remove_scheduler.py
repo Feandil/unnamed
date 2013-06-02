@@ -5,73 +5,110 @@
 # this stuff is worth it, you can buy me a beer in return. Vincent Brillault
 # ----------------------------------------------------------------------------
 
-"""Extend sched with threading, with automatic run/wait"""
+"""Thread implementation of sched for Linux, with a proper poll"""
 
-import sched
-import time
-import threading
+from fcntl import fcntl, F_SETFL
+from heapq import heapify, heappop, heappush
+from os import pipe, read, write, O_NONBLOCK
+from select import poll, POLLIN
+from time import time
+from threading import Event, RLock, Thread
 
-# Note: as of Python3.3, the lock can be removed
+READ_MAX_SIZE = 8
 
 
-class RemoveScheduler(threading.Thread):
-    """Run a scheduler in a dedicated thread.
-       Wait on an 'add' if schedule empty
-        Warning: no concurrency protection between last event and add !
-    """
+class RemoveScheduler(Thread):
+    """Thread implementation of sched, with a proper poll"""
 
-    def __init__(self, timefunc=time.time, delayfunc=time.sleep):
-        self._elements = {}
-        self._sched = sched.scheduler(timefunc, delayfunc)
-        self._lock = threading.RLock()
-        self._wakeup = threading.Condition(self._lock)
-        self._end = threading.Event()
+    def __init__(self):
         super(RemoveScheduler, self).__init__()
+        self._heap = []
+        self._heap_content = {}
+        self._lock = RLock()
+        self._fd = pipe()
+        self._pollobj = poll()
+        self._pollobj.register(self._fd[0], POLLIN)
+        fcntl(self._fd[0], F_SETFL, O_NONBLOCK)
+        self._end = Event()
+        self._next = None
 
-    def _callback(self, item):
-        """Callback for the scheduler"""
-        try:
-            (_, handler) = self._elements[item]
-            del self._elements[item]
-            handler.delete(item)
-        except KeyError:
-            # Already removed
-            pass
-
-    def add(self, delay, item, handler, priority=1):
-        """Remove the given item in delay"""
+    def add(self, delay, ident, callback, *args, **kwargs):
+        """Run the given callback after the given delay,
+        the ident must be unique and is used for cancelling the event"""
+        end = time() + delay
+        if ident in self._heap_content:
+            raise KeyError('Identifier already present')
+        self._heap_content[ident] = (end, callback, args, kwargs)
         with self._lock:
-            if item in self._elements:
-                raise KeyError("Key already present")
-            event = self._sched.enter(delay, priority,
-                                      self._callback,
-                                      (item,))
-            self._elements[item] = (event, handler)
-            self._wakeup.notify_all()
+            heappush(self._heap, (end, ident))
+            if (self._next is None or
+                    self._next > end):
+                write(self._fd[1], '.')
 
-    def cancel(self, item):
-        """Cancel the removal of the given item"""
+    def cancel(self, ident):
+        """Cancel the removal of the callback identified by ident"""
         with self._lock:
             try:
-                (event, _) = self._elements[item]
-                del self._elements[item]
-                self._sched.cancel(event)
+                del self._heap_content[ident]
             except KeyError:
                 # Already removed
+                pass
+
+    def _clean_fd(self):
+        """Clean the pipe ((re-)enter the lock)"""
+        with self._lock:
+            try:
+                while read(self._fd[0], READ_MAX_SIZE) != '':
+                    pass
+            except OSError:
+                # EAGAIN (empty)
                 pass
 
     def run(self):
         """Run the scheduler, rerun-it until the end"""
         while not self._end.is_set():
-            self._sched.run()
+            # As we are only removing element in this function, no lock needed
+            if len(self._heap) == 0:
+                self._pollobj.poll()
+                self._clean_fd()
+                continue
+            else:
+                with self._lock:
+                    (end, ident) = self._heap[0]
+                    try:
+                        raw = self._heap_content[ident]
+                    except KeyError:
+                        # Event Cancelled
+                        heappop(self._heap)
+                        continue
+                    if raw[0] != end:
+                        # Event Cancelled and re-injected
+                        heappop(self._heap)
+                        continue
+
+            now = time()
+            if now < end:
+                res = self._pollobj.poll(end - now)
+                if res is not None:
+                    self._clean_fd()
+                    continue
             with self._lock:
-                if self._end.is_set():
-                    break
-                self._wakeup.wait()
+                self._heap.remove((end, ident))
+                heapify(self._heap)
+                try:
+                    (end2, callback, args, kwargs) = self._heap_content[ident]
+                    if end2 != end:
+                        # Event Cancelled and re-injected
+                        heappop(self._heap)
+                        continue
+                    del self._heap_content[ident]
+                except KeyError:
+                    continue
+            callback(*args, **kwargs)
 
     def stop(self):
         """Notify the underlying thread to stop, join it"""
         self._end.set()
         with self._lock:
-            self._wakeup.notify_all()
+            write(self._fd[1], '!')
         self.join()

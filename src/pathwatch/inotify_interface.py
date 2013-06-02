@@ -101,12 +101,13 @@ class _EventProcessing(_DefaultEventProcessing):
         Non-standard method name set by libnotify"""
         with self._move_lock:
             self._moving[event.cookie] = event.pathname
-            self._scheduler.add(self._delay, (event.cookie, event.dir), self)
+            self._scheduler.add(self._delay, event.cookie, self.delete,
+                                (event.cookie, event.dir))
 
     def process_IN_MOVED_TO(self, event):  # pylint: disable=C0103
         """A file/folder was moved out
         Non-standard method name set by libnotify"""
-        self._scheduler.cancel((event.cookie, event.dir))
+        self._scheduler.cancel(event.cookie)
         with self._move_lock:
             if event.cookie in self._moving:
                 # moved from watched place
