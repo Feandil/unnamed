@@ -69,6 +69,8 @@ class Hasher(threading.Thread):
                     filedb.link_to_hash(filename, rowid)
                 except IOError:
                     filedb.delete_path(filename)
+                if self._end.is_set():
+                    break
             if len(to_be_hashed) == 0:
                 with self._wakeup:
                     self._wakeup.wait()
