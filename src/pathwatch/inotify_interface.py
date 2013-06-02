@@ -179,9 +179,10 @@ class _EventProcessing(_DefaultEventProcessing):
                 return
             with self._wd_lock:
                 remove_wd = []
-                for k in self._wd.keys():
+                for k in self._wd:
                     if k.startswith(path):
                         remove_wd.append(self._wd[k])
+                        # The removal from _wd will be done by IN_IGNORE calls
                 if len(remove_wd) != 0:
                     try:
                         self._wm.rm_watch(remove_wd, rec=False, quiet=False)
