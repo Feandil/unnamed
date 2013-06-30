@@ -8,10 +8,11 @@
 """Hashes files that haven't been hashed yet, store results in the database"""
 
 import hashlib
+import os.path
 import threading
 import zlib
 
-from .database import DBHashHelper, DBFilesHelper
+from database import PathFile, HashFile
 
 _MD4 = hashlib.new('MD4')
 E2DK_BLOCK = 9728000
@@ -49,29 +50,39 @@ class Hasher(threading.Thread):
     """Threaded process that gets files to hash from the database and
     hash them"""
 
-    def __init__(self, database, files_per_call=10):
+    def __init__(self, factory, files_per_call=10):
         super(Hasher, self).__init__()
         self._wakeup = threading.Condition()
         self.files_per_call = files_per_call
-        self._db = database
+        self._factory = factory
         self._end = threading.Event()
 
     def run(self):
         """Get files to hash from the database, sleep if there are none"""
-        hashdb = DBHashHelper(self._db)
-        filedb = DBFilesHelper(None, hashdb)
+        session = self._factory.get(expire_on_commit=False)
         while not self._end.is_set():
-            to_be_hashed = filedb.get_unhashed_files(self.files_per_call)
-            for filename in to_be_hashed:
+            query = session.query(PathFile).filter_by(hash=None)
+            to_be_hashed = query.limit(self.files_per_call).all()
+            session.commit()
+            for pathfile in to_be_hashed:
+                fullpath = os.path.join(pathfile.path, pathfile.name)
+                query = session.query(PathFile).filter_by(id=pathfile.id)
                 try:
-                    (crc, e2dk) = _crc_and_e2dk(filename)
-                    rowid = hashdb.insert_hash(e2dk, crc)
-                    filedb.link_to_hash(filename, rowid)
+                    (crc, e2dk) = _crc_and_e2dk(fullpath)
+                    newhash = HashFile(crc=crc, e2dk=e2dk)
+                    session.add(newhash)
+                    session.commit()
+                    query.update({'hash_id': newhash.id},
+                                 synchronize_session=False)
+                    session.commit()
                 except IOError:
-                    filedb.delete_path(filename)
+                    query.delete(synchronize_session=False)
+                    session.commit()
                 if self._end.is_set():
                     break
             if len(to_be_hashed) == 0:
+                if self._end.is_set():
+                    break
                 with self._wakeup:
                     self._wakeup.wait()
 

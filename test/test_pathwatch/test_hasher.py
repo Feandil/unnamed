@@ -1,7 +1,7 @@
 """Test if the hasher is working as predicted or not"""
 
 from pathwatch.hasher import _crc_and_e2dk, E2DK_BLOCK, Hasher
-from pathwatch.database import DBFilesHelper, DBHashHelper
+from database import PathFile, HashFile, SessionFactory
 
 import os.path
 import shutil
@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 
-class TestHashes(unittest.TestCase):
+class TestHashes(unittest.TestCase):  # pylint: disable=R0904
     """Test the hash functions"""
 
     def setUp(self):  # pylint: disable=C0103
@@ -60,19 +60,37 @@ class TestHashes(unittest.TestCase):
 class TestHasher(unittest.TestCase):  # pylint: disable=R0904
     """Test if the Hasher is working as predicted or not"""
 
+    def _add_file(self, path, name):
+        """Add a file in the underlying database"""
+        self._session.add(PathFile(path=path, name=name))
+        self._session.commit()
+        return os.path.join(path, name)
+
     def setUp(self):  # pylint: disable=C0103
         """Create a temporary folder for the test, start a hasher"""
         self.tempdir = tempfile.mkdtemp()
-        database = os.path.join(self.tempdir, 'database')
-        self._filedb = DBFilesHelper(database)
-        self._hasher = Hasher(database)
+        database = os.path.join(self.tempdir, 'test.db')
+        factory = SessionFactory(database='sqlite:///' + database)
+        self._session = factory.get()
+        dummy_hash = HashFile(crc='13', e2dk='42')
+        self._session.add(dummy_hash)
+        dummy = PathFile(path='/dum', name='my', hash=dummy_hash)
+        self._session.add(dummy)
+        self._session.commit()
+        self._hasher = Hasher(factory)
         self._hasher.start()
-        self.expected_db = {}
+        self.expected_db = {'/dum/my': ('13', '42')}
 
     def tearDown(self):  # pylint: disable=C0103
         """Delete the temporary folder"""
         self._hasher.stop()
-        real_db = self._filedb._list_hashes_join()
+        real_db_data = self._session.query(PathFile, HashFile
+                                           ).join(HashFile).all()
+        real_db = {}
+        for (pathfile, hashfile) in real_db_data:
+            filename = os.path.join(pathfile.path, pathfile.name)
+            real_db[filename] = (hashfile.crc, hashfile.e2dk)
+        self._session.commit()
         self.assertDictEqual(self.expected_db, real_db)
         shutil.rmtree(self.tempdir, ignore_errors=True)
 
@@ -81,33 +99,32 @@ class TestHasher(unittest.TestCase):  # pylint: disable=R0904
         pass
 
     def test_one_file(self):
-        """Do nothing exept starting/stoping a daemon"""
-        filename = os.path.join(self.tempdir, 'file')
+        """Hash one file"""
+        filename = self._add_file(self.tempdir, 'file')
         with open(filename, 'w') as output:
             output.write('\0' * (2 * E2DK_BLOCK))
-        self._filedb.insert_file(filename, 42)
         self._hasher.notify()
         self.expected_db[filename] = ('adccde1a',
                                       '194ee9e4fa79b2ee9f8829284c466051')
-
         time.sleep(1)
 
     def test_two_file(self):
-        """Do nothing exept starting/stoping a daemon"""
-        filename1 = os.path.join(self.tempdir, 'file')
+        """Hash two files"""
+        filename1 = self._add_file(self.tempdir, 'file_1')
         with open(filename1, 'w') as output:
             output.write('\0' * (2 * E2DK_BLOCK))
-        self._filedb.insert_file(filename1, 42)
+        filename2 = self._add_file(self.tempdir, 'file_2')
+        with open(filename2, 'w') as output:
+            output.write('\0' * E2DK_BLOCK)
         self._hasher.notify()
         self.expected_db[filename1] = ('adccde1a',
                                        '194ee9e4fa79b2ee9f8829284c466051')
-
-        filename2 = os.path.join(self.tempdir, 'file')
-        with open(filename2, 'w') as output:
-            output.write('\0' * E2DK_BLOCK)
-        self._filedb.insert_file(filename2, 42)
-        self._hasher.notify()
         self.expected_db[filename2] = ('3abc06ba',
                                        'd7def262a127cd79096a108e7a9fc138')
+        time.sleep(1)
 
+    def test_inexisting_file(self):
+        """Try to hash an inexisting file"""
+        self._add_file(self.tempdir, 'file')
+        self._hasher.notify()
         time.sleep(1)
