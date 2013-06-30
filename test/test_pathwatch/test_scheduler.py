@@ -1,9 +1,9 @@
-"""Test if the RemoveScheduler is working as predicted or not"""
+"""Test if the Scheduler is working as predicted or not"""
 
 import unittest
 import time
 
-from pathwatch.remove_scheduler import RemoveScheduler
+from pathwatch.scheduler import Scheduler
 
 
 class DictRemove(object):
@@ -37,14 +37,14 @@ def stop_on_interrupt(fun):
     return wrapped
 
 
-class TestRemoveScheduler(unittest.TestCase):  # pylint: disable=R0904
-    """Test if the RemoveScheduler is working as predicted or not"""
+class TestScheduler(unittest.TestCase):  # pylint: disable=R0904
+    """Test if the Scheduler is working as predicted or not"""
 
     def setUp(self):  # pylint: disable=C0103
-        """Create a RemoveScheduler"""
+        """Create a Scheduler"""
         self.dict = {'flag': 'Not Empty'}
         self.remover = DictRemove(self.dict)
-        self.scheduler = RemoveScheduler()
+        self.scheduler = Scheduler()
         self.scheduler.start()
 
     def tearDown(self):  # pylint: disable=C0103

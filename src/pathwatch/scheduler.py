@@ -17,11 +17,11 @@ from threading import Event, RLock, Thread
 READ_MAX_SIZE = 8
 
 
-class RemoveScheduler(Thread):
+class Scheduler(Thread):
     """Thread implementation of sched, with a proper poll"""
 
     def __init__(self):
-        super(RemoveScheduler, self).__init__()
+        super(Scheduler, self).__init__()
         self._heap = []
         self._heap_content = {}
         self._lock = RLock()

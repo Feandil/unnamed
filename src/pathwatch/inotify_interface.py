@@ -16,7 +16,7 @@ from .errorwarn import (InotifyFSUnmount, InotifyQueueOverflow,
                         InotifyUnexpectedEvent, InotifyTranscientPath,
                         InotifyDisappearingWD, InotifyMissingingWD,
                         InotifyRootDeleted, InotifyRootMoved)
-from .remove_scheduler import RemoveScheduler
+from .scheduler import Scheduler
 
 
 class _DefaultEventProcessing(pyinotify.ProcessEvent):
@@ -222,7 +222,7 @@ class InotifyWatch(object):
         self._wm = pyinotify.WatchManager()
         self._wd = {}
         self._wd_lock = threading.RLock()
-        self._scheduler = RemoveScheduler()
+        self._scheduler = Scheduler()
         self._queue = listener
         kargs = {'parent': self,
                  'watch_manager': self._wm,
